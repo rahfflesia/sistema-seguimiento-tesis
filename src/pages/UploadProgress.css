@@ -1,0 +1,246 @@
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.drop-zone {
+  border: 2px dashed var(--primary-light);
+  border-radius: var(--radius-lg);
+  padding: 4rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.drop-zone:hover, .drop-zone.dragging {
+  background-color: rgba(0, 90, 130, 0.05);
+  border-color: var(--primary-color);
+  transform: scale(1.01);
+}
+
+.hidden-input {
+  display: none;
+}
+
+.drop-zone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.upload-icon {
+  color: var(--primary-light);
+  margin-bottom: 0.5rem;
+}
+
+.drop-zone h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.drop-zone p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.file-hints {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.file-card {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+  position: relative;
+}
+
+.file-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--bg-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.file-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.file-size {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.progress-bar-container {
+  height: 4px;
+  background-color: var(--bg-color);
+  border-radius: var(--radius-full);
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--primary-light);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.file-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-full);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  background-color: #fee2e2;
+  color: var(--danger);
+}
+
+.feedback-preview {
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.review {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+}
+
+.text-muted {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.comment {
+  display: flex;
+  gap: 1rem;
+}
+
+.comment.alumno {
+  flex-direction: row-reverse;
+}
+
+.comment-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.alumno-avatar {
+  background: var(--secondary-color);
+}
+
+.comment-body {
+  background: white;
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  flex: 1;
+  max-width: 85%;
+}
+
+.comment.alumno .comment-body {
+  background: rgba(0, 90, 130, 0.03);
+  border-color: rgba(0, 90, 130, 0.1);
+}
+
+.comment-body strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.comment-body .time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-left: 0.5rem;
+}
+
+.comment-body p {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
