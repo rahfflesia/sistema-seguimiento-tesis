@@ -1,60 +1,87 @@
-import { useState } from 'react';
-import { Search, Star, UserPlus, Check, Filter } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Star, UserPlus, Check, Filter, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './AdvisorSelection.css';
-
-// Simulated data
-const ADVISORS_DATA = [
-  {
-    id: 1,
-    name: 'Dr. Roberto Mendoza',
-    department: 'Inteligencia Artificial',
-    expertise: ['Machine Learning', 'Visión Computacional', 'Redes Neuronales'],
-    availability: 'Alta',
-    rating: 4.8,
-    avatar: 'RM'
-  },
-  {
-    id: 2,
-    name: 'Dra. Elena Vázquez',
-    department: 'Software Educativo',
-    expertise: ['Gamificación', 'E-learning', 'HCI'],
-    availability: 'Media',
-    rating: 4.9,
-    avatar: 'EV'
-  },
-  {
-    id: 3,
-    name: 'Dr. Carlos Jiménez',
-    department: 'Seguridad Informática',
-    expertise: ['Criptografía', 'Seguridad en Redes', 'Forense Digital'],
-    availability: 'Baja',
-    rating: 4.6,
-    avatar: 'CJ'
-  },
-  {
-    id: 4,
-    name: 'M.C. Laura Torres',
-    department: 'Ingeniería Web',
-    expertise: ['Arquitecturas Cloud', 'Microservicios', 'PWA'],
-    availability: 'Alta',
-    rating: 4.7,
-    avatar: 'LT'
-  }
-];
 
 const AdvisorSelection = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [requestedAdvisorId, setRequestedAdvisorId] = useState<number | null>(null);
+  const [advisors, setAdvisors] = useState<any[]>([]);
+  const [protocol, setProtocol] = useState<any>(null);
+  
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-  const handleRequest = (id: number) => {
-    setRequestedAdvisorId(id);
-    // Real implementation would make an API call here
+  const token = localStorage.getItem('token');
+
+  const fetchData = async () => {
+    try {
+      // Get active protocol to see if student can request, and if they already requested
+      const protoRes = await fetch('http://localhost:5000/api/protocols/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (protoRes.ok) {
+        const pData = await protoRes.json();
+        setProtocol(pData);
+      }
+
+      // Get real advisors
+      const advRes = await fetch('http://localhost:5000/api/users/advisors', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (advRes.ok) {
+        const advData = await advRes.json();
+        setAdvisors(advData);
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredAdvisors = ADVISORS_DATA.filter(adv => 
+  useEffect(() => {
+    fetchData();
+  }, [token]);
+
+  const handleRequest = async (id: number) => {
+    if (!protocol) {
+      alert('Debes registrar un protocolo primero.');
+      return;
+    }
+    
+    if (!window.confirm('¿Deseas enviar una solicitud de vinculación a este asesor? Solo puedes enviar a uno.')) return;
+    
+    setIsSubmitting(true);
+    try {
+        const res = await fetch('http://localhost:5000/api/protocols/me/advisor', {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ advisor_id: id })
+        });
+        
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.message);
+        
+        alert(data.message);
+        fetchData(); // reload
+    } catch(err: any) {
+        alert(err.message);
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const filteredAdvisors = advisors.filter(adv => 
     adv.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    adv.expertise.some(exp => exp.toLowerCase().includes(searchTerm.toLowerCase()))
+    adv.expertise.some((exp: string) => exp.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (loading) return <div className="page-container"><p>Cargando asesores...</p></div>;
 
   return (
     <div className="page-container animate-fade-in">
@@ -62,6 +89,27 @@ const AdvisorSelection = () => {
         <h2>Vinculación con Asesor</h2>
         <p>Explora el directorio de profesores investigadores y solicita la dirección de tu tesis.</p>
       </div>
+
+      {!protocol && (
+        <div className="insight-panel glass-panel mb-6 border-warning">
+          <div className="insight-header">
+            <AlertCircle className="text-warning" size={24} />
+            <h3>Aún no tienes un protocolo activo</h3>
+          </div>
+          <p>Para poder solicitar la revisión de un asesor, primero debes proponer tu tema.</p>
+          <button className="btn-primary mt-4" onClick={() => navigate('/protocol')}>Ir a Registro de Protocolo</button>
+        </div>
+      )}
+
+      {protocol && protocol.advisor_id && (
+        <div className="insight-panel glass-panel mb-6 border-success">
+          <div className="insight-header">
+            <Check className="text-success" size={24} />
+            <h3>Solicitud en Proceso</h3>
+          </div>
+          <p>Has enviado una solicitud a un asesor. Estado de la solicitud: <strong>{protocol.advisor_status.toUpperCase()}</strong></p>
+        </div>
+      )}
 
       <div className="search-bar-container glass-panel">
         <div className="search-input-wrapper">
@@ -103,22 +151,22 @@ const AdvisorSelection = () => {
             </div>
 
             <div className="expertise-tags">
-              {advisor.expertise.map((exp, idx) => (
+              {advisor.expertise.map((exp: string, idx: number) => (
                 <span key={idx} className="tag">{exp}</span>
               ))}
             </div>
 
             <div className="card-actions">
               <button className="btn-secondary">Ver Perfil</button>
-              {requestedAdvisorId === advisor.id ? (
+              {protocol?.advisor_id === advisor.id ? (
                 <button className="btn-primary success" disabled>
-                  <Check size={18} /> Solicitud Enviada
+                  <Check size={18} /> Solicitud {protocol.advisor_status === 'requested' ? 'Enviada' : 'Aceptada'}
                 </button>
               ) : (
                 <button 
                   className="btn-primary" 
                   onClick={() => handleRequest(advisor.id)}
-                  disabled={requestedAdvisorId !== null}
+                  disabled={!protocol || protocol.advisor_id || isSubmitting}
                 >
                   <UserPlus size={18} /> Solicitar Asesoría
                 </button>

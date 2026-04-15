@@ -242,3 +242,28 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+.logout-button {
+  margin-top: 0.75rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-md);
+  color: #ef4444; /* danger color */
+  font-weight: 600;
+  font-size: 0.85rem;
+  background-color: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+

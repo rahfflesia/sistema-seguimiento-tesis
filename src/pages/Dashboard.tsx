@@ -1,18 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, Calendar, ArrowRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
-const TimelineData = [
-  { id: 1, title: 'Registro de Protocolo', date: '15 Septiembre 2024', status: 'completed', description: 'Aprobado por el comité de titulación.' },
-  { id: 2, title: 'Asignación de Asesor', date: '30 Septiembre 2024', status: 'completed', description: 'Dr. Roberto Mendoza asignado como director.' },
-  { id: 3, title: 'Entrega Capítulo 1', date: '15 Noviembre 2024', status: 'completed', description: 'Marco teórico y planteamiento del problema.' },
-  { id: 4, title: 'Entrega Capítulo 2 y 3', date: '20 Febrero 2025', status: 'in-progress', description: 'Desarrollo metodológico y resultados preliminares.' },
-  { id: 5, title: 'Revisión Final de Borrador', date: '15 Abril 2025', status: 'pending', description: 'Revisión de formato y documento completo.' },
-  { id: 6, title: 'Examen Profesional', date: 'Por definir', status: 'pending', description: 'Defensa de tesis ante sínodo.' }
-];
-
 const Dashboard = () => {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch('http://localhost:5000/api/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
+        }
+
+        if (!res.ok) throw new Error('Error al cargar los datos');
+
+        const json = await res.json();
+        setData(json);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [navigate]);
 
   const handleGenerateReport = () => {
     setIsGenerating(true);
@@ -31,18 +57,28 @@ const Dashboard = () => {
     }
   };
 
+  if (loading) {
+    return <div className="page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><h3>Cargando información...</h3></div>;
+  }
+
+  if (error || !data) {
+    return <div className="page-container"><p style={{color: 'red'}}>{error}</p></div>;
+  }
+
+  const { user, dashboard } = data;
+
   return (
     <div className="page-container animate-fade-in dashboard-layout">
       
       {/* Mockup-style Premium Greeting */}
       <div className="dashboard-greeting">
-        <h1 className="greeting-title">Hola, Alumno UAS</h1>
+        <h1 className="greeting-title">{user.welcomeMessage}</h1>
         <h2 className="greeting-subtitle text-gradient">¿En qué te puedo ayudar hoy?</h2>
       </div>
 
       {/* Overview Cards */}
       <div className="overview-grid">
-        <div className="stat-card glass-panel gradient-blue">
+         <div className="stat-card glass-panel gradient-blue">
           <h3>Progreso General</h3>
           <div className="progress-circle">
             <svg viewBox="0 0 36 36" className="circular-chart blue">
@@ -52,12 +88,12 @@ const Dashboard = () => {
                   a 15.9155 15.9155 0 0 1 0 -31.831"
               />
               <path className="circle"
-                strokeDasharray="65, 100"
+                strokeDasharray={`${dashboard.progressPercentage}, 100`}
                 d="M18 2.0845
                   a 15.9155 15.9155 0 0 1 0 31.831
                   a 15.9155 15.9155 0 0 1 0 -31.831"
               />
-              <text x="18" y="20.35" className="percentage">65%</text>
+              <text x="18" y="20.35" className="percentage">{dashboard.progressPercentage}%</text>
             </svg>
           </div>
           <p>Tesis en Desarrollo</p>
@@ -68,8 +104,8 @@ const Dashboard = () => {
             <h3>Próxima Entrega</h3>
             <Calendar className="text-primary" />
           </div>
-          <p className="stat-value">20 Feb</p>
-          <p className="stat-desc">Capítulo 2 y 3 (Faltan 8 días)</p>
+          <p className="stat-value">{dashboard.nextDelivery.date}</p>
+          <p className="stat-desc">{dashboard.nextDelivery.chapter} (Faltan {dashboard.nextDelivery.daysLeft} días)</p>
           <button className="btn-outline-primary mt-auto">Ver Detalles <ArrowRight size={16}/></button>
         </div>
 
@@ -96,7 +132,7 @@ const Dashboard = () => {
           </div>
           
           <div className="timeline">
-            {TimelineData.map((item, index) => (
+            {dashboard.timeline.map((item: any) => (
               <div key={item.id} className={`timeline-item ${item.status}`}>
                 <div className="timeline-line"></div>
                 <div className="timeline-icon">
@@ -119,9 +155,9 @@ const Dashboard = () => {
               <AlertCircle className="text-danger" size={24} />
               <h3>Revisión de Originalidad</h3>
             </div>
-            <p>El último escaneo del Capítulo 1 arroja un <strong>9% de similitud</strong>.</p>
+            <p>El último escaneo del Capítulo 1 arroja un <strong>{dashboard.plagiarismScore}% de similitud</strong>.</p>
             <div className="similarity-bar-container">
-              <div className="similarity-bar" style={{width: '9%'}}></div>
+              <div className="similarity-bar" style={{width: `${dashboard.plagiarismScore}%`}}></div>
             </div>
             <p className="hint">Métrica dentro del límite permitido (20%). ¡Buen trabajo!</p>
           </div>

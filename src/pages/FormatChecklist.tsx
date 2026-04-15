@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, Circle, AlertTriangle, Info } from 'lucide-react';
+import { CheckCircle, Circle, AlertTriangle, Info, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import './FormatChecklist.css';
 
 interface ChecklistItem {
@@ -24,19 +25,72 @@ const INITIAL_CHECKLIST: ChecklistItem[] = [
 const FormatChecklist = () => {
   const [items, setItems] = useState<ChecklistItem[]>(INITIAL_CHECKLIST);
   const [progress, setProgress] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [protocol, setProtocol] = useState<any>(null);
+  
+  const token = localStorage.getItem('token');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchProtocolData = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/protocols/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok && data) {
+            setProtocol(data);
+            if (data.checklist_state && data.checklist_state !== '{}') {
+                try {
+                    const savedState = JSON.parse(data.checklist_state);
+                    setItems(INITIAL_CHECKLIST.map(i => ({ ...i, checked: !!savedState[i.id] })));
+                } catch(e) {}
+            }
+        }
+      } catch (err) {
+        console.error('Error fetching protocol checklist', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProtocolData();
+  }, [token]);
 
   useEffect(() => {
     const checkedCount = items.filter(i => i.checked).length;
     setProgress(Math.round((checkedCount / items.length) * 100));
   }, [items]);
 
-  const toggleItem = (id: string) => {
-    setItems(prev => prev.map(item => 
+  const toggleItem = async (id: string) => {
+    if (!protocol) return;
+
+    const newItems = items.map(item => 
       item.id === id ? { ...item, checked: !item.checked } : item
-    ));
+    );
+    setItems(newItems);
+
+    // Save to DB
+    const newStateObj: any = {};
+    newItems.forEach(i => { newStateObj[i.id] = i.checked; });
+    
+    try {
+        await fetch('http://localhost:5000/api/protocols/me/checklist', {
+            method: 'PUT',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ checklist_state: newStateObj })
+        });
+    } catch(err) {
+        console.error("Error saving checklist", err);
+    }
   };
 
   const categories = Array.from(new Set(items.map(i => i.category)));
+
+  if (loading) return <div className="page-container"><p>Cargando información...</p></div>;
 
   return (
     <div className="page-container animate-fade-in">
@@ -45,7 +99,18 @@ const FormatChecklist = () => {
         <p>Asegúrate de cumplir con los lineamientos de formato de la Universidad Autónoma de Sinaloa antes de entregar.</p>
       </div>
 
-      <div className="progress-container glass-panel">
+      {!protocol && (
+        <div className="insight-panel glass-panel mb-6 border-warning">
+          <div className="insight-header">
+            <Lock className="text-warning" size={24} />
+            <h3>Aviso Importante</h3>
+          </div>
+          <p>Para poder guardar el progreso de tu checklist, es necesario registrar tu protocolo de tesis.</p>
+          <button className="btn-primary mt-4" onClick={() => navigate('/protocol')}>Ir a Registro de Protocolo</button>
+        </div>
+      )}
+
+      <div className={`progress-container glass-panel ${!protocol ? 'opacity-50' : ''}`}>
         <div className="progress-header">
           <h3>Progreso de Verificación</h3>
           <span className="progress-percentage">{progress}%</span>
@@ -67,7 +132,7 @@ const FormatChecklist = () => {
         )}
       </div>
 
-      <div className="checklist-container">
+      <div className={`checklist-container ${!protocol ? 'opacity-50 pointer-events-none' : ''}`}>
         {categories.map(category => (
           <div key={category} className="category-section glass-panel">
             <h3 className="category-title">{category}</h3>
@@ -75,8 +140,9 @@ const FormatChecklist = () => {
               {items.filter(i => i.category === category).map(item => (
                 <div 
                   key={item.id} 
-                  className={`checklist-item ${item.checked ? 'checked' : ''}`}
+                  className={`checklist-item ${item.checked ? 'checked' : ''} ${!protocol ? 'disabled' : ''}`}
                   onClick={() => toggleItem(item.id)}
+                  style={!protocol ? { cursor: 'not-allowed' } : {}}
                 >
                   <div className="item-checkbox">
                     {item.checked ? (
