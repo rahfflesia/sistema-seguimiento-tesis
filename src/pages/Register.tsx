@@ -50,20 +50,6 @@ const Register = () => {
         {error && <div style={{ color: '#d32f2f', backgroundColor: '#fdecea', padding: '10px', borderRadius: '4px', fontSize: '0.9rem' }}>{error}</div>}
 
         <div className="form-group">
-          <label htmlFor="role">Rol</label>
-          <select 
-            id="role" 
-            value={role} 
-            onChange={(e) => setRole(e.target.value)}
-            required
-          >
-            <option value="student">Estudiante</option>
-            <option value="advisor">Asesor</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
-
-        <div className="form-group">
           <label htmlFor="name">Nombre Completo</label>
           <input 
             type="text" 

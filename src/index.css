@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -5,56 +7,57 @@
 }
 
 :root {
-  /* Modern Clean Dashboard Colors */
-  --primary-color: #6366f1;      /* Indigo 500 */
-  --primary-light: #818cf8;      /* Indigo 400 */
-  --primary-dark: #4f46e5;       /* Indigo 600 */
-  --accent-color: #ec4899;       /* Pink 500 */
+  /* Institutional Academic Color Palette (UAS Deep Navy and Gold) */
+  --primary-color: #0b2240;      /* Deep Navy */
+  --primary-light: #1c3659;      
+  --primary-dark: #051020;       
+  --accent-color: #bfa15f;       /* Academic Gold */
+  --accent-light: #dfc282;       
   
   /* Neutral scale - crisp white and slate */
-  --bg-color: #f8fafc;           /* Slate 50 */
-  --surface-color: #ffffff;
-  --text-primary: #0f172a;       /* Slate 900 */
-  --text-secondary: #64748b;     /* Slate 500 */
-  --text-tertiary: #94a3b8;      /* Slate 400 */
-  --border-color: #e2e8f0;       /* Slate 200 */
-  --border-light: #f1f5f9;       /* Slate 100 */
+  --bg-color: #f5f7fa;           /* Clean academic background */
+  --surface-color: #ffffff;      /* Pure white */
+  --text-primary: #0f172a;       /* Dark slate */
+  --text-secondary: #475569;     /* Slate */
+  --text-tertiary: #8ea1b6;      
+  --border-color: #cbd5e1;       
+  --border-light: #eef2f6;       
 
   /* Status Colors */
   --success: #10b981;            
-  --success-bg: #d1fae5;         
+  --success-bg: #ecfdf5;         
   --warning: #f59e0b;            
-  --warning-bg: #fef3c7;         
+  --warning-bg: #fffbeb;         
   --danger: #ef4444;             
-  --danger-bg: #fee2e2;          
+  --danger-bg: #fef2f2;          
   --info: #3b82f6;               
-  --info-bg: #dbeafe;            
+  --info-bg: #eff6ff;            
 
   /* Effects */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-full: 9999px;
   
-  /* Soft, elevated shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.02);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.04);
+  /* Soft, clean shadows using navy tinting for premium look */
+  --shadow-sm: 0 1px 2px 0 rgba(11, 34, 64, 0.02);
+  --shadow-md: 0 4px 6px -1px rgba(11, 34, 64, 0.04), 0 2px 4px -1px rgba(11, 34, 64, 0.02);
+  --shadow-lg: 0 10px 15px -3px rgba(11, 34, 64, 0.04), 0 4px 6px -2px rgba(11, 34, 64, 0.02);
+  --shadow-card: 0 4px 24px rgba(11, 34, 64, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Subtle grid background */
+  /* Very light navy grid background */
   background-image: 
-    linear-gradient(to right, rgba(0, 0, 0, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+    linear-gradient(to right, rgba(11, 34, 64, 0.012) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 34, 64, 0.012) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
@@ -95,13 +98,9 @@ button {
   box-shadow: var(--shadow-card);
 }
 
-/* Gradient Text Utility */
+/* Gradient Text Utility (Adjusted for Academic Look) */
 .text-gradient {
-  background: linear-gradient(135deg, #06b6d4, #6366f1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: transparent;
+  color: var(--primary-color);
 }
 
 /* Animated transition defaults */
@@ -112,4 +111,59 @@ button {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Global Alert & Notice Cards (Insight Panels) */
+.insight-panel {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-left: 4px solid var(--primary-color);
+}
+
+.insight-panel.border-warning {
+  border-left-color: var(--warning) !important;
+}
+
+.insight-panel.border-success {
+  border-left-color: var(--success) !important;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.insight-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.insight-panel p {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.download-btn-small {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-btn-small:hover {
+  background-color: var(--border-light);
+  color: var(--primary-color);
 }

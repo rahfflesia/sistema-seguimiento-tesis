@@ -9,9 +9,16 @@ export const createProtocol = (req, res) => {
         }
 
         // Check if student already has a protocol
-        const existing = db.prepare('SELECT id FROM protocols WHERE student_id = ?').get(student_id);
+        const existing = db.prepare('SELECT id, status FROM protocols WHERE student_id = ?').get(student_id);
         if (existing) {
-            return res.status(400).json({ message: 'Ya tienes un protocolo registrado.' });
+            if (existing.status === 'rejected') {
+                // Update and resubmit the protocol
+                const stmt = db.prepare('UPDATE protocols SET title = ?, general_objective = ?, specific_objectives = ?, research_line_id = ?, status = \'pending\', advisor_id = NULL, advisor_status = \'none\', checklist_state = \'{}\' WHERE student_id = ?');
+                stmt.run(title, general_objective, specific_objectives, research_line_id, student_id);
+                return res.json({ id: existing.id, message: 'Protocolo actualizado y reenviado con éxito' });
+            } else {
+                return res.status(400).json({ message: 'Ya tienes un protocolo registrado.' });
+            }
         }
 
         const stmt = db.prepare('INSERT INTO protocols (student_id, title, general_objective, specific_objectives, research_line_id) VALUES (?, ?, ?, ?, ?)');
@@ -86,5 +93,53 @@ export const updateChecklist = (req, res) => {
     } catch(err) {
         console.error('updateChecklist error:', err);
         res.status(500).json({ message: 'Error interno' });
+    }
+};
+
+export const getAllProtocols = (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'No autorizado. Solo coordinadores.' });
+        }
+        const db = req.db;
+        const protocols = db.prepare(`
+            SELECT p.id, p.title, p.general_objective, p.specific_objectives, p.status, p.created_at, 
+                   u.name as student_name, u.email as student_email, r.name as research_line_name
+            FROM protocols p
+            JOIN users u ON p.student_id = u.id
+            LEFT JOIN research_lines r ON p.research_line_id = r.id
+            ORDER BY p.created_at DESC
+        `).all();
+        res.json(protocols);
+    } catch (error) {
+        console.error('getAllProtocols error:', error);
+        res.status(500).json({ message: 'Error interno obteniendo protocolos' });
+    }
+};
+
+export const updateProtocolStatus = (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'No autorizado. Solo coordinadores.' });
+        }
+        const { id } = req.params;
+        const { status } = req.body;
+        const db = req.db;
+
+        if (!['approved', 'rejected', 'pending'].includes(status)) {
+            return res.status(400).json({ message: 'Estado inválido' });
+        }
+
+        const stmt = db.prepare('UPDATE protocols SET status = ? WHERE id = ?');
+        const info = stmt.run(status, id);
+
+        if (info.changes === 0) {
+            return res.status(404).json({ message: 'Protocolo no encontrado' });
+        }
+
+        res.json({ message: `Protocolo ${status === 'approved' ? 'aprobado' : 'rechazado'} con éxito` });
+    } catch (error) {
+        console.error('updateProtocolStatus error:', error);
+        res.status(500).json({ message: 'Error interno actualizando estado' });
     }
 };

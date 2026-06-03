@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { UploadCloud, FileText, X, CheckCircle, AlertCircle, MessageSquare, Send, Download, Eye } from 'lucide-react';
 import './UploadProgress.css';
 
 interface FileUpload {
   id: string | number;
   name: string;
   size: number;
-  status: 'uploading' | 'completed' | 'error';
+  status: 'uploading' | 'scanning' | 'completed' | 'error';
   progress: number;
+  plagiarism_score?: number;
   created_at?: string;
 }
 
@@ -15,6 +16,12 @@ const UploadProgress = () => {
   const [files, setFiles] = useState<FileUpload[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [protocolError, setProtocolError] = useState('');
+  
+  // Comments state
+  const [selectedFile, setSelectedFile] = useState<FileUpload | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const token = localStorage.getItem('token');
@@ -28,15 +35,19 @@ const UploadProgress = () => {
         });
         const data = await res.json();
         if (res.ok && Array.isArray(data)) {
-            const historyFiles = data.map((d: any) => ({
-                id: d.id,
-                name: d.file_name,
-                size: d.file_size,
-                status: d.status,
-                progress: 100,
-                created_at: d.created_at
-            }));
+             const historyFiles = data.map((d: any) => ({
+                 id: d.id,
+                 name: d.file_name,
+                 size: d.file_size,
+                 status: d.status as any,
+                 progress: 100,
+                 plagiarism_score: d.plagiarism_score,
+                 created_at: d.created_at
+             }));
             setFiles(historyFiles);
+            if (historyFiles.length > 0 && !selectedFile) {
+                setSelectedFile(historyFiles[0]);
+            }
         } else if (res.status === 404) {
             setProtocolError('Debes registrar tu protocolo primero antes de subir avances.');
         } else if (data.message && typeof data.message === 'string' && data.message.includes('protocolo activo')) {
@@ -49,6 +60,26 @@ const UploadProgress = () => {
     loadHistory();
   }, [token]);
 
+  // Fetch comments when selected file changes
+  useEffect(() => {
+    if (!selectedFile || selectedFile.status !== 'completed' || typeof selectedFile.id !== 'number') return;
+    
+    const fetchComments = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/advances/${selectedFile.id}/comments`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setComments(data);
+            }
+        } catch (e) {
+            console.error("Error fetching comments", e);
+        }
+    };
+    fetchComments();
+  }, [selectedFile, token]);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -59,24 +90,47 @@ const UploadProgress = () => {
     setIsDragging(false);
   };
 
+  // Store raw File objects by temp ID so we can send them after the progress animation
+  const pendingFilesRef = useRef<Map<string, File>>(new Map());
+
   const saveToBackend = async (fileInfo: FileUpload) => {
     try {
+        const rawFile = pendingFilesRef.current.get(fileInfo.id as string);
+        
+        const formData = new FormData();
+        if (rawFile) {
+            formData.append('file', rawFile);
+            pendingFilesRef.current.delete(fileInfo.id as string);
+        } else {
+            formData.append('file_name', fileInfo.name);
+            formData.append('file_size', String(fileInfo.size));
+        }
+
         const res = await fetch('http://localhost:5000/api/advances', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                file_name: fileInfo.name,
-                file_size: fileInfo.size
-            })
+            body: formData
         });
         
         if (!res.ok) throw new Error('Error al guardar avance');
+        const data = await res.json();
+        
+        const completedFile = { 
+          ...fileInfo, 
+          id: data.id, 
+          status: 'completed' as const, 
+          plagiarism_score: data.plagiarism_score 
+        };
+
+        setFiles(prev => prev.map(f => f.id === fileInfo.id ? completedFile : f));
+        
+        if (!selectedFile || selectedFile.id === fileInfo.id) {
+            setSelectedFile(completedFile);
+        }
     } catch (e) {
         console.error(e);
-        // Marcamos error visual en caso de fallar red
         setFiles(prev => prev.map(f => f.id === fileInfo.id ? { ...f, status: 'error' } : f));
     }
   }
@@ -90,16 +144,18 @@ const UploadProgress = () => {
         clearInterval(interval);
         
         setFiles(prev => prev.map(f => 
-          f.id === newFile.id ? { ...f, progress: 100, status: 'completed' } : f
+          f.id === newFile.id ? { ...f, progress: 100, status: 'scanning' } : f
         ));
         
-        saveToBackend(newFile); // Save it once the bar hits 100%
+        setTimeout(() => {
+          saveToBackend({ ...newFile, progress: 100, status: 'scanning' });
+        }, 2000);
       } else {
         setFiles(prev => prev.map(f => 
           f.id === newFile.id ? { ...f, progress } : f
         ));
       }
-    }, 500);
+    }, 400);
   };
 
   const handleFiles = (selectedFiles: FileList | null) => {
@@ -109,13 +165,17 @@ const UploadProgress = () => {
         return;
     }
 
-    const newFiles: FileUpload[] = Array.from(selectedFiles).map((file) => ({
-      id: Math.random().toString(36).substr(2, 9), // temp id
-      name: file.name,
-      size: file.size,
-      status: 'uploading',
-      progress: 0
-    }));
+    const newFiles: FileUpload[] = Array.from(selectedFiles).map((file) => {
+      const tempId = Math.random().toString(36).substr(2, 9);
+      pendingFilesRef.current.set(tempId, file);
+      return {
+        id: tempId,
+        name: file.name,
+        size: file.size,
+        status: 'uploading' as const,
+        progress: 0
+      };
+    });
 
     setFiles(prev => [...newFiles, ...prev]);
     newFiles.forEach(simulateUpload);
@@ -128,8 +188,11 @@ const UploadProgress = () => {
   };
 
   const removeFile = (id: string | number) => {
-    // Para simplificar, local remove. Un app real haría API request DELETE
     setFiles(prev => prev.filter(f => f.id !== id));
+    if (selectedFile?.id === id) {
+        setSelectedFile(null);
+        setComments([]);
+    }
   };
 
   const formatSize = (bytes: number) => {
@@ -138,6 +201,44 @@ const UploadProgress = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const submitComment = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newComment.trim() || !selectedFile || typeof selectedFile.id !== 'number') return;
+      
+      try {
+          const res = await fetch(`http://localhost:5000/api/advances/${selectedFile.id}/comments`, {
+              method: 'POST',
+              headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ comment: newComment })
+          });
+          
+          if (res.ok) {
+              const savedComment = await res.json();
+              setComments(prev => [...prev, savedComment]);
+              setNewComment('');
+          }
+      } catch (err) {
+          console.error(err);
+      }
+  };
+
+  const handleDownload = (advanceId: string | number) => {
+    const url = 'http://localhost:5000/api/advances/' + advanceId + '/download';
+    const link = document.createElement('a');
+    link.href = url;
+    // Add auth token as query param for download (or use a hidden form)
+    // For simplicity, open in new tab which triggers browser download
+    window.open(url, '_blank');
+  };
+
+  const handleView = (advanceId: string | number) => {
+    const url = 'http://localhost:5000/api/advances/' + advanceId + '/view';
+    window.open(url, '_blank');
   };
 
   return (
@@ -186,29 +287,69 @@ const UploadProgress = () => {
             <h3 className="section-title">Archivos de Avances ({files.length})</h3>
             <div className="files-grid">
               {files.map(file => (
-                <div key={file.id} className="file-card glass-panel">
+                <div 
+                  key={file.id} 
+                  className={`file-card glass-panel ${selectedFile?.id === file.id ? 'selected' : ''}`}
+                  onClick={() => { if (file.status === 'completed') setSelectedFile(file); }}
+                  style={{ cursor: file.status === 'completed' ? 'pointer' : 'default', border: selectedFile?.id === file.id ? '2px solid var(--primary-color)' : '' }}
+                >
                   <div className="file-icon">
                     <FileText size={24} className={file.name.endsWith('.pdf') ? 'text-danger' : 'text-info'} />
                   </div>
                   
                   <div className="file-details">
                     <span className="file-name" title={file.name}>{file.name}</span>
-                    <span className="file-size">{formatSize(file.size)} {file.created_at ? `- ${new Date(file.created_at).toLocaleDateString()}` : ''}</span>
+                    <span className="file-size">
+                      {formatSize(file.size)} {file.created_at ? `- ${new Date(file.created_at).toLocaleDateString()}` : ''}
+                      {file.plagiarism_score !== undefined && (
+                        <span className={`plagiarism-score-badge ${file.plagiarism_score > 20 ? 'high' : 'low'}`}>
+                          Similitud: {file.plagiarism_score}%
+                        </span>
+                      )}
+                    </span>
                     
                     {file.status === 'uploading' && (
                       <div className="progress-bar-container">
                         <div className="progress-bar" style={{ width: `${file.progress}%` }}></div>
                       </div>
                     )}
+                    {file.status === 'scanning' && (
+                      <div className="scanning-text-academic">
+                        <span className="loading-spinner-tiny"></span>
+                        <span>Analizando similitud en Turnitin...</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="file-status">
                     {file.status === 'uploading' && <span className="text-secondary">{Math.round(file.progress)}%</span>}
+                    {file.status === 'scanning' && <span className="text-warning" style={{ fontSize: '0.8rem', fontWeight: 600 }}>Turnitin</span>}
                     {file.status === 'completed' && <CheckCircle size={20} className="text-success" />}
                     {file.status === 'error' && <AlertCircle size={20} className="text-danger" />}
                   </div>
 
-                  <button className="remove-btn" onClick={() => removeFile(file.id)}>
+                  {file.status === 'completed' && (
+                    <>
+                      <button 
+                        className="download-btn-small" 
+                        onClick={(e) => { e.stopPropagation(); handleView(file.id); }}
+                        title="Ver vista previa"
+                        style={{ marginRight: '0.25rem' }}
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button 
+                        className="download-btn-small" 
+                        onClick={(e) => { e.stopPropagation(); handleDownload(file.id); }}
+                        title="Descargar archivo"
+                        style={{ marginRight: '0.25rem' }}
+                      >
+                        <Download size={18} />
+                      </button>
+                    </>
+                  )}
+
+                  <button className="remove-btn" onClick={(e) => { e.stopPropagation(); removeFile(file.id); }}>
                     <X size={18} />
                   </button>
                 </div>
@@ -218,31 +359,46 @@ const UploadProgress = () => {
         )}
       </div>
       
-      {/* Simulation for retroalimentación visual de la plataforma (mismo archivo pero calificado) */}
-      <div className="feedback-preview glass-panel">
-        <div className="header-flex">
-          <h3>Ejemplo: Historial de Revisiones</h3>
-          <span className="status-badge review">En Revisión por Asesor</span>
-        </div>
-        <p className="text-muted">Una vez que tu asesor revise uno de los documentos de avance, sus comentarios aparecerán aquí.</p>
-        
-        <div className="comment-thread mt-4">
-          <div className="comment asesor">
-            <div className="comment-avatar">RM</div>
-            <div className="comment-body">
-              <strong>Dr. Roberto Mendoza</strong> <span className="time">Hace 2 días</span>
-              <p>El marco teórico está bien estructurado, pero necesitas citar fuentes más recientes del 2024 en la sección de Machine Learning.</p>
-            </div>
+      {selectedFile && typeof selectedFile.id === 'number' && (
+        <div className="feedback-preview glass-panel mt-6">
+          <div className="header-flex">
+            <h3>Historial de Revisiones: {selectedFile.name}</h3>
+            <span className="status-badge review"><MessageSquare size={14} style={{display:'inline', marginRight: '4px'}}/> Comentarios</span>
           </div>
-          <div className="comment alumno">
-            <div className="comment-avatar alumno-avatar">A</div>
-            <div className="comment-body">
-              <strong>Tú</strong> <span className="time">Ayer</span>
-              <p>Entendido doctor, acabo de subir la versión corregida con referencias del IEEE de este año.</p>
-            </div>
+          
+          <div className="comment-thread mt-4">
+            {comments.length === 0 ? (
+                <p className="text-muted" style={{textAlign: 'center', padding: '2rem'}}>Aún no hay comentarios en este documento.</p>
+            ) : (
+                comments.map(c => (
+                    <div key={c.id} className={`comment ${c.user_role === 'student' ? 'alumno' : 'asesor'}`}>
+                        <div className={`comment-avatar ${c.user_role === 'student' ? 'alumno-avatar' : ''}`}>
+                            {c.user_name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="comment-body">
+                            <strong>{c.user_name}</strong> <span className="time">{new Date(c.created_at).toLocaleString()}</span>
+                            <p>{c.comment}</p>
+                        </div>
+                    </div>
+                ))
+            )}
           </div>
+
+          <form className="comment-form mt-4" onSubmit={submitComment} style={{display: 'flex', gap: '1rem'}}>
+            <input 
+                type="text" 
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                placeholder="Escribe un comentario o respuesta..." 
+                className="premium-input" 
+                style={{flex: 1}}
+            />
+            <button type="submit" className="btn-primary" disabled={!newComment.trim()}>
+                <Send size={18} /> Enviar
+            </button>
+          </form>
         </div>
-      </div>
+      )}
     </div>
   );
 };

@@ -2,7 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/authRoutes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -12,6 +17,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Initialize SQLite database
 const db = new Database('database.sqlite');
@@ -55,8 +61,18 @@ const initDb = () => {
             file_name TEXT NOT NULL,
             file_size INTEGER NOT NULL,
             status TEXT DEFAULT 'completed',
+            plagiarism_score INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (protocol_id) REFERENCES protocols(id)
+        );
+        CREATE TABLE IF NOT EXISTS advance_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            advance_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            comment TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (advance_id) REFERENCES advances(id),
+            FOREIGN KEY (user_id) REFERENCES users(id)
         );
     `);
     
@@ -68,6 +84,14 @@ const initDb = () => {
 
     try {
         db.exec("ALTER TABLE protocols ADD COLUMN checklist_state TEXT DEFAULT '{}';");
+    } catch(e) {}
+
+    try {
+        db.exec("ALTER TABLE advances ADD COLUMN plagiarism_score INTEGER DEFAULT 0;");
+    } catch(e) {}
+
+    try {
+        db.exec("ALTER TABLE advances ADD COLUMN stored_filename TEXT;");
     } catch(e) {}
     
     console.log("Database initialized.");
@@ -89,12 +113,14 @@ import researchLinesRoutes from './routes/researchLinesRoutes.js';
 import protocolRoutes from './routes/protocolRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import advanceRoutes from './routes/advanceRoutes.js';
+import templateRoutes from './routes/templateRoutes.js';
 
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/research-lines', researchLinesRoutes);
 app.use('/api/protocols', protocolRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/advances', advanceRoutes);
+app.use('/api/templates', templateRoutes);
 
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'API is running', timestamp: new Date() });

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, Calendar, ArrowRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Download, Calendar, ArrowRight, CheckCircle2, Clock, AlertCircle, Users, BookOpen, MessageSquare, UserCheck, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 
@@ -42,23 +42,22 @@ const Dashboard = () => {
 
   const handleGenerateReport = () => {
     setIsGenerating(true);
-    // Simulate generation
     setTimeout(() => {
       setIsGenerating(false);
-      window.print(); // Easy simulated PDF generation
+      window.print();
     }, 1500);
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle2 size={24} className="text-success" />;
-      case 'in-progress': return <Clock size={24} className="text-warning" />;
-      default: return <CircleEmpty />;
+      case 'completed': return <CheckCircle2 size={20} className="text-success" />;
+      case 'in-progress': return <Clock size={20} className="text-warning" />;
+      default: return <Clock size={20} className="text-tertiary" style={{ opacity: 0.5 }} />;
     }
   };
 
   if (loading) {
-    return <div className="page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><h3>Cargando información...</h3></div>;
+    return <div className="page-container flex-center" style={{ minHeight: '60vh' }}><h3>Cargando información...</h3></div>;
   }
 
   if (error || !data) {
@@ -67,120 +66,293 @@ const Dashboard = () => {
 
   const { user, dashboard } = data;
 
-  return (
-    <div className="page-container animate-fade-in dashboard-layout">
-      
-      {/* Mockup-style Premium Greeting */}
-      <div className="dashboard-greeting">
-        <h1 className="greeting-title">{user.welcomeMessage}</h1>
-        <h2 className="greeting-subtitle text-gradient">¿En qué te puedo ayudar hoy?</h2>
-      </div>
-
-      {/* Overview Cards */}
-      <div className="overview-grid">
-         <div className="stat-card glass-panel gradient-blue">
-          <h3>Progreso General</h3>
-          <div className="progress-circle">
-            <svg viewBox="0 0 36 36" className="circular-chart blue">
-              <path className="circle-bg"
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <path className="circle"
-                strokeDasharray={`${dashboard.progressPercentage}, 100`}
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <text x="18" y="20.35" className="percentage">{dashboard.progressPercentage}%</text>
-            </svg>
-          </div>
-          <p>Tesis en Desarrollo</p>
+  // 1. STUDENT DASHBOARD VIEW
+  if (user.role === 'student') {
+    return (
+      <div className="page-container animate-fade-in dashboard-layout">
+        <div className="dashboard-greeting-academic">
+          <h1 className="greeting-title-academic">Expediente del Alumno: {user.name}</h1>
+          <p className="greeting-subtitle-academic">Monitoreo académico de protocolo de tesis, vinculación de asesoría y avances de investigación.</p>
         </div>
 
-        <div className="stat-card glass-panel">
-          <div className="stat-header">
-            <h3>Próxima Entrega</h3>
-            <Calendar className="text-primary" />
-          </div>
-          <p className="stat-value">{dashboard.nextDelivery.date}</p>
-          <p className="stat-desc">{dashboard.nextDelivery.chapter} (Faltan {dashboard.nextDelivery.daysLeft} días)</p>
-          <button className="btn-outline-primary mt-auto">Ver Detalles <ArrowRight size={16}/></button>
-        </div>
-
-        <div className="stat-card glass-panel action-card">
-          <h3>Reporte de Avance</h3>
-          <p>Genera un documento PDF oficial con tu progreso validado por el asesor para trámites de servicio social o becas.</p>
-          <button 
-            className="btn-primary mt-auto" 
-            onClick={handleGenerateReport}
-            disabled={isGenerating}
-          >
-            {isGenerating ? <span className="loading-spinner"></span> : <Download size={18} />}
-            {isGenerating ? ' Generando...' : ' Descargar PDF'}
-          </button>
-        </div>
-      </div>
-
-      <div className="dashboard-content">
-        {/* Timeline Section */}
-        <div className="timeline-container glass-panel">
-          <div className="section-header">
-            <h2>Cronograma de Actividades</h2>
-            <p>Fechas clave y progreso de tu proyecto de titulación.</p>
-          </div>
-          
-          <div className="timeline">
-            {dashboard.timeline.map((item: any) => (
-              <div key={item.id} className={`timeline-item ${item.status}`}>
-                <div className="timeline-line"></div>
-                <div className="timeline-icon">
-                  {getStatusIcon(item.status)}
-                </div>
-                <div className="timeline-content">
-                  <div className="timeline-date">{item.date}</div>
-                  <h4>{item.title}</h4>
-                  <p>{item.description}</p>
-                </div>
+        {/* Academic borderless metrics banner */}
+        <div className="metrics-row-academic">
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Progreso General</span>
+            <div className="progress-container-academic">
+              <div className="progress-bar-wrapper-academic">
+                <div className="progress-bar-fill-academic" style={{ width: `${dashboard.progressPercentage}%` }}></div>
               </div>
-            ))}
+              <span className="progress-text-academic">{dashboard.progressPercentage}%</span>
+            </div>
+            <span className="metric-desc-academic">Capítulos de Tesis</span>
+          </div>
+
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Próxima Entrega</span>
+            <span className="metric-value-academic" style={{ fontSize: '1.25rem' }}>{dashboard.nextDelivery.date}</span>
+            <span className="metric-desc-academic">{dashboard.nextDelivery.chapter} (Faltan {dashboard.nextDelivery.daysLeft} días)</span>
+          </div>
+
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Reporte de Avances</span>
+            <button 
+              className="btn-action-academic" 
+              onClick={handleGenerateReport}
+              disabled={isGenerating}
+              style={{ marginTop: '0.25rem' }}
+            >
+              {isGenerating ? <Clock size={16} className="animate-spin" /> : <Download size={16} />}
+              <span>{isGenerating ? 'Generando...' : 'Descargar PDF'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Plagiarism Check Alert (Simulated Feature) */}
-        <div className="side-panels">
-          <div className="insight-panel glass-panel">
-            <div className="insight-header">
-              <AlertCircle className="text-danger" size={24} />
-              <h3>Revisión de Originalidad</h3>
+        {/* Single Unified Academic sheet */}
+        <div className="workspace-sheet-academic">
+          <div className="sheet-section-academic">
+            <h3 className="sheet-section-title-academic">Cronograma del Proyecto</h3>
+            <p className="sheet-section-desc-academic">Fechas y estados clave del proceso de titulación actual.</p>
+            
+            <div className="timeline">
+              {dashboard.timeline.map((item: any) => (
+                <div key={item.id} className={`timeline-item ${item.status}`}>
+                  <div className="timeline-icon">
+                    {getStatusIcon(item.status)}
+                  </div>
+                  <div className="timeline-content">
+                    <div className="timeline-date">{item.date}</div>
+                    <h4>{item.title}</h4>
+                    <p>{item.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <p>El último escaneo del Capítulo 1 arroja un <strong>{dashboard.plagiarismScore}% de similitud</strong>.</p>
-            <div className="similarity-bar-container">
-              <div className="similarity-bar" style={{width: `${dashboard.plagiarismScore}%`}}></div>
-            </div>
-            <p className="hint">Métrica dentro del límite permitido (20%). ¡Buen trabajo!</p>
           </div>
 
-          <div className="insight-panel glass-panel">
-            <div className="insight-header">
-              <div className="avatar-small">RM</div>
-              <h3>Mensaje del Asesor</h3>
+          {/* Plagiarism analysis & Advisor message section stacked vertically */}
+          <div className="sheet-section-academic">
+            <h3 className="sheet-section-title-academic">Análisis de Similitud e Indicaciones</h3>
+            <p className="sheet-section-desc-academic">Revisiones automáticas de Turnitin y observaciones emitidas por el director de tesis.</p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0.5rem' }}>
+              <div className="similarity-indicator-academic">
+                <span className="metric-label-academic">Originalidad (Turnitin)</span>
+                {dashboard.plagiarismScore > 0 ? (
+                  <>
+                    <p style={{ fontSize: '0.85rem', margin: 0, color: 'var(--text-secondary)' }}>
+                      El último análisis arroja un <strong>{dashboard.plagiarismScore}% de similitud</strong> (dentro del límite permitido del 20%).
+                    </p>
+                    <div className="similarity-bar-wrapper-academic">
+                      <div className="similarity-bar-fill-academic" style={{ width: `${dashboard.plagiarismScore}%`, backgroundColor: dashboard.plagiarismScore > 20 ? 'var(--danger)' : 'var(--success)' }}></div>
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ fontSize: '0.85rem', margin: 0, color: 'var(--text-tertiary)' }}>No se registran análisis de Turnitin en la plataforma.</p>
+                )}
+              </div>
+
+              {dashboard.advisorMessage ? (
+                <div className="callout-academic">
+                  <div className="callout-header-academic">
+                    <MessageSquare size={16} />
+                    <span>Observación del Asesor ({dashboard.advisorMessage.author})</span>
+                  </div>
+                  <p className="callout-body-academic">"{dashboard.advisorMessage.text}"</p>
+                </div>
+              ) : (
+                <div className="callout-academic" style={{ borderLeftColor: 'var(--border-color)' }}>
+                  <p className="callout-body-academic">No se registran observaciones pendientes en el expediente.</p>
+                </div>
+              )}
+
+              <button className="btn-explore-academic" onClick={() => navigate('/progress')}>
+                <span>Gestionar Carga de Avances</span>
+                <ArrowRight size={14} />
+              </button>
             </div>
-            <p className="message-preview">"Por favor, revisa las correcciones que dejé en la justificación antes de continuar con la metodología."</p>
-            <button className="btn-text">Ir a Carga de Avances →</button>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
 
-// Component helper
-const CircleEmpty = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10"></circle>
-  </svg>
-);
+  // 2. ADVISOR DASHBOARD VIEW
+  if (user.role === 'advisor') {
+    return (
+      <div className="page-container animate-fade-in dashboard-layout">
+        <div className="dashboard-greeting-academic">
+          <h1 className="greeting-title-academic">Panel de Dirección Académica</h1>
+          <p className="greeting-subtitle-academic">Docente Asesor: {user.name}</p>
+        </div>
+
+        {/* Academic borderless metrics banner */}
+        <div className="metrics-row-academic">
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Alumnos Activos</span>
+            <span className="metric-value-academic">{dashboard.stats.activeAdvisees}</span>
+            <span className="metric-desc-academic">Bajo dirección de tesis</span>
+          </div>
+
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Solicitudes Pendientes</span>
+            <span className="metric-value-academic" style={{ color: dashboard.stats.pendingRequests > 0 ? 'var(--warning)' : 'var(--primary-color)' }}>
+              {dashboard.stats.pendingRequests}
+            </span>
+            <span className="metric-desc-academic">Esperando vinculación</span>
+          </div>
+
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Revisiones Emitidas</span>
+            <span className="metric-value-academic">{dashboard.stats.totalComments}</span>
+            <span className="metric-desc-academic">Comentarios guardados</span>
+          </div>
+        </div>
+
+        {/* Single Workspace sheet */}
+        <div className="workspace-sheet-academic">
+          <div className="sheet-section-academic">
+            <h3 className="sheet-section-title-academic">Solicitudes y Actividades Recientes</h3>
+            <p className="sheet-section-desc-academic">Historial de vinculaciones de alumnos y propuestas registradas.</p>
+            
+            <div className="timeline">
+              {dashboard.timeline.map((item: any) => (
+                <div key={item.id} className={`timeline-item ${item.status}`}>
+                  <div className="timeline-icon">
+                    {getStatusIcon(item.status)}
+                  </div>
+                  <div className="timeline-content">
+                    <div className="timeline-date">{item.date}</div>
+                    <h4>{item.title}</h4>
+                    <p>{item.description}</p>
+                  </div>
+                </div>
+              ))}
+              {dashboard.timeline.length === 0 && (
+                <p className="text-muted text-center py-4" style={{ fontSize: '0.85rem' }}>No se registran actividades recientes en la plataforma.</p>
+              )}
+            </div>
+            
+            <button className="btn-explore-academic" onClick={() => navigate('/advisees')} style={{ marginTop: '0.5rem' }}>
+              <span>Administrar Vinculaciones y Alumnos</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+          <div className="sheet-section-academic">
+            <h3 className="sheet-section-title-academic">Últimas Entregas Recibidas</h3>
+            <p className="sheet-section-desc-academic font-normal">Capítulos y documentos cargados recientemente por tus alumnos asesorados.</p>
+            
+            <div className="list-academic" style={{ marginTop: '0.5rem' }}>
+              {dashboard.recentSubmissions.map((sub: any) => (
+                <div key={sub.id} className="list-item-academic">
+                  <div>
+                    <div className="list-item-title-academic">{sub.studentName}</div>
+                    <div className="list-item-desc-academic">
+                      <FileText size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                      <span>{sub.fileName}</span>
+                    </div>
+                  </div>
+                  <span className="metric-desc-academic">{new Date(sub.date).toLocaleDateString()}</span>
+                </div>
+              ))}
+              {dashboard.recentSubmissions.length === 0 && (
+                <p className="text-muted py-4" style={{ fontSize: '0.85rem' }}>No se registran archivos entregados para revisar.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. ADMIN DASHBOARD VIEW
+  if (user.role === 'admin') {
+    return (
+      <div className="page-container animate-fade-in dashboard-layout">
+        <div className="dashboard-greeting-academic">
+          <h1 className="greeting-title-academic">Consola de Control de Posgrado</h1>
+          <p className="greeting-subtitle-academic">Coordinador Académico: {user.name}</p>
+        </div>
+
+        {/* Academic borderless metrics banner */}
+        <div className="metrics-row-academic">
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Matrícula Estudiantes</span>
+            <span className="metric-value-academic">{dashboard.stats.totalStudents}</span>
+            <span className="metric-desc-academic">Registrados en el sistema</span>
+          </div>
+
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Asesores Acreditados</span>
+            <span className="metric-value-academic">{dashboard.stats.totalAdvisors}</span>
+            <span className="metric-desc-academic">Docentes en directorio</span>
+          </div>
+
+          <div className="metric-item-academic">
+            <span className="metric-label-academic">Líneas de Investigación</span>
+            <span className="metric-value-academic">{dashboard.stats.totalLines}</span>
+            <span className="metric-desc-academic">Temas autorizados</span>
+          </div>
+        </div>
+
+        {/* Single Workspace sheet */}
+        <div className="workspace-sheet-academic">
+          <div className="sheet-section-academic">
+            <h3 className="sheet-section-title-academic">Propuestas de Protocolo Recientes</h3>
+            <p className="sheet-section-desc-academic">Últimos temas y objetivos registrados por los alumnos para dictaminación.</p>
+            
+            <div className="timeline">
+              {dashboard.timeline.map((item: any) => (
+                <div key={item.id} className="timeline-item completed">
+                  <div className="timeline-icon">
+                    <CheckCircle2 size={20} className="text-success" />
+                  </div>
+                  <div className="timeline-content">
+                    <div className="timeline-date">{item.date}</div>
+                    <h4>{item.title}</h4>
+                    <p>{item.description}</p>
+                  </div>
+                </div>
+              ))}
+              {dashboard.timeline.length === 0 && (
+                <p className="text-muted text-center py-4" style={{ fontSize: '0.85rem' }}>No se registran propuestas de protocolos de tesis.</p>
+              )}
+            </div>
+            
+            <button className="btn-explore-academic" onClick={() => navigate('/protocols-admin')} style={{ marginTop: '0.5rem' }}>
+              <span>Evaluar Propuestas de Protocolo</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+
+          <div className="sheet-section-academic">
+            <h3 className="sheet-section-title-academic">Últimos Usuarios Registrados</h3>
+            <p className="sheet-section-desc-academic">Cuentas creadas recientemente en la plataforma de posgrados.</p>
+            
+            <div className="list-academic" style={{ marginTop: '0.5rem' }}>
+              {dashboard.recentUsers.map((u: any) => (
+                <div key={u.id} className="list-item-academic">
+                  <div>
+                    <div className="list-item-title-academic">{u.name}</div>
+                    <div className="list-item-desc-academic">{u.email}</div>
+                  </div>
+                  <span className="badge info" style={{ fontSize: '0.65rem' }}>{u.role}</span>
+                </div>
+              ))}
+            </div>
+            
+            <button className="btn-explore-academic" onClick={() => navigate('/users-admin')} style={{ marginTop: '0.5rem' }}>
+              <span>Ver Catálogo de Usuarios</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
 
 export default Dashboard;

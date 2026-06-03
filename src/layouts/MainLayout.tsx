@@ -26,9 +26,9 @@ const MainLayout = () => {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="logo-icon">
-            <Sparkles size={20} />
+            <BookOpen size={20} />
           </div>
-          <h2>Tesis Tracker</h2>
+          <h2>Control de Tesis</h2>
         </div>
         
         <nav className="sidebar-nav">
@@ -78,6 +78,10 @@ const MainLayout = () => {
           {localStorage.getItem('userRole') === 'admin' && (
             <>
               <div className="nav-section">Administración</div>
+              <NavLink to="/protocols-admin" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
+                <FileText size={20} />
+                <span>Temas de Tesis</span>
+              </NavLink>
               <NavLink to="/research-lines" className={({isActive}) => isActive ? 'nav-item active' : 'nav-item'}>
                 <BookOpen size={20} />
                 <span>Líneas de Inv.</span>

@@ -29,7 +29,15 @@ const ProtocolRegistration = () => {
         });
         if (protoRes.ok) {
           const protoData = await protoRes.json();
-          if (protoData) setExistingProtocol(protoData);
+          if (protoData) {
+            setExistingProtocol(protoData);
+            if (protoData.status === 'rejected') {
+              setTitle(protoData.title);
+              setGeneralObjective(protoData.general_objective);
+              setSpecificObjectives(protoData.specific_objectives);
+              setResearchLineId(protoData.research_line_id.toString());
+            }
+          }
         }
 
         // Fetch Research Lines
@@ -92,7 +100,7 @@ const ProtocolRegistration = () => {
     <div className="page-container animate-fade-in">
       <div className="page-header">
         <h2>Registro de Protocolo</h2>
-        {existingProtocol ? (
+        {existingProtocol && existingProtocol.status !== 'rejected' ? (
           <p>Ya tienes un protocolo en revisión o registrado en el sistema.</p>
         ) : (
           <p>Ingresa la información inicial de tu propuesta de tesis para obtener el visto bueno de la coordinación.</p>
@@ -100,7 +108,7 @@ const ProtocolRegistration = () => {
       </div>
 
       <div className="registration-content">
-        {existingProtocol ? (
+        {existingProtocol && existingProtocol.status !== 'rejected' ? (
           <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>
             <Lock size={48} className="text-primary" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
             <h3 style={{ marginBottom: '1rem' }}>Protocolo Registrado</h3>
@@ -114,7 +122,15 @@ const ProtocolRegistration = () => {
           </div>
         ) : (
           <form className="protocol-form glass-panel" onSubmit={handleSubmit}>
-            {error && <div style={{ color: '#d32f2f', background: '#fdecea', padding: '10px', borderRadius: '4px' }}>{error}</div>}
+            {existingProtocol?.status === 'rejected' && (
+              <div style={{ color: '#ef4444', background: '#fef2f2', padding: '12px', borderRadius: '6px', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={20} />
+                <div>
+                  <strong>Propuesta Rechazada por la Coordinación</strong>
+                  <p style={{ fontSize: '0.85rem', marginTop: '0.2rem', color: '#475569' }}>Por favor, realice las correcciones sugeridas y reenvíe el protocolo para su revisión.</p>
+                </div>
+              </div>
+            )}
             
             <div className="form-group">
               <label htmlFor="title">Título Propuesto de la Tesis</label>

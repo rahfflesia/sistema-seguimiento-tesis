@@ -1,58 +1,50 @@
+import { useState, useEffect } from 'react';
 import { FileText, Download, FileSpreadsheet, Presentation } from 'lucide-react';
 import './OfficialTemplates.css';
 
-const TEMPLATES = [
-  {
-    id: 1,
-    title: 'Plantilla de Protocolo Institucional',
-    category: 'Word',
-    icon: <FileText size={32} className="text-info" />,
-    size: '1.2 MB',
-    format: '.docx',
-    description: 'Documento base con los márgenes, fuentes y portadas oficiales para el registro.'
-  },
-  {
-    id: 2,
-    title: 'Formato de Cronograma Gantt',
-    category: 'Excel',
-    icon: <FileSpreadsheet size={32} className="text-success" />,
-    size: '450 KB',
-    format: '.xlsx',
-    description: 'Plantilla de Excel automatizada para planificar los tiempos de tu investigación.'
-  },
-  {
-    id: 3,
-    title: 'Plantilla Presentación de Defensa',
-    category: 'PowerPoint',
-    icon: <Presentation size={32} className="text-warning" />,
-    size: '3.4 MB',
-    format: '.pptx',
-    description: 'Diapositivas configuradas con el diseño institucional para el examen profesional.'
-  },
-  {
-    id: 4,
-    title: 'Solicitud de Director de Tesis',
-    category: 'PDF / Word',
-    icon: <FileText size={32} className="text-primary" />,
-    size: '120 KB',
-    format: '.doc',
-    description: 'Formulario oficial para solicitar formalmente a un profesor.'
-  }
-];
-
 const OfficialTemplates = () => {
-  const handleDownload = (title: string, format: string) => {
-    // Simulated download
-    const blob = new Blob(["Simulated content for " + title], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title.replace(/\s+/g, '_')}${format}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/templates', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Error al cargar plantillas');
+        const data = await res.json();
+        setTemplates(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTemplates();
+  }, [token]);
+
+  const getIcon = (category: string) => {
+    switch (category) {
+      case 'Excel': return <FileSpreadsheet size={32} className="text-success" />;
+      case 'PowerPoint': return <Presentation size={32} className="text-warning" />;
+      default: return <FileText size={32} className="text-info" />;
+    }
   };
+
+  const handleDownload = (url: string, title: string, format: string) => {
+    const link = document.createElement('a');
+    link.href = `http://localhost:5000${url}`;
+    link.download = `${title.replace(/\s+/g, '_')}${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (loading) return <div className="page-container"><p>Cargando plantillas...</p></div>;
 
   return (
     <div className="page-container animate-fade-in">
@@ -61,11 +53,13 @@ const OfficialTemplates = () => {
         <p>Descarga los archivos base para estructurar tus documentos según la normativa institucional.</p>
       </div>
 
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
       <div className="templates-grid">
-        {TEMPLATES.map(template => (
+        {templates.map(template => (
           <div key={template.id} className="template-card glass-panel">
             <div className="template-icon-wrapper">
-              {template.icon}
+              {getIcon(template.category)}
             </div>
             
             <div className="template-content">
@@ -80,13 +74,16 @@ const OfficialTemplates = () => {
 
             <button 
               className="download-btn flex-center gap-2"
-              onClick={() => handleDownload(template.title, template.format)}
+              onClick={() => handleDownload(template.url, template.title, template.format)}
             >
               <Download size={18} />
               <span>Descargar</span>
             </button>
           </div>
         ))}
+        {templates.length === 0 && !error && (
+            <p>No hay plantillas disponibles en este momento.</p>
+        )}
       </div>
     </div>
   );

@@ -4,18 +4,18 @@
 }
 
 .page-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
 }
 
 .page-header h2 {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   color: var(--primary-color);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .page-header p {
   color: var(--text-secondary);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
 }
 
 .registration-content {

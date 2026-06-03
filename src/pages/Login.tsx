@@ -20,7 +20,7 @@ const Login = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, role }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
@@ -47,20 +47,6 @@ const Login = () => {
     <>
       <form className="auth-form" onSubmit={handleSubmit}>
         {error && <div style={{ color: '#d32f2f', backgroundColor: '#fdecea', padding: '10px', borderRadius: '4px', fontSize: '0.9rem' }}>{error}</div>}
-        
-        <div className="form-group">
-          <label htmlFor="role">Rol</label>
-          <select 
-            id="role" 
-            value={role} 
-            onChange={(e) => setRole(e.target.value)}
-            required
-          >
-            <option value="student">Estudiante</option>
-            <option value="advisor">Asesor</option>
-            <option value="admin">Administrador</option>
-          </select>
-        </div>
 
         <div className="form-group">
           <label htmlFor="email">Correo Electrónico</label>

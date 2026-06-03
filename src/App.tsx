@@ -11,6 +11,9 @@ import OfficialTemplates from './pages/OfficialTemplates';
 import ResearchLines from './pages/ResearchLines';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Advisees from './pages/Advisees';
+import UsersAdmin from './pages/UsersAdmin';
+import ProtocolsAdmin from './pages/ProtocolsAdmin';
 
 function App() {
   return (
@@ -33,6 +36,9 @@ function App() {
             <Route path="checklist" element={<FormatChecklist />} />
             <Route path="templates" element={<OfficialTemplates />} />
             <Route path="research-lines" element={<ResearchLines />} />
+            <Route path="advisees" element={<Advisees />} />
+            <Route path="users-admin" element={<UsersAdmin />} />
+            <Route path="protocols-admin" element={<ProtocolsAdmin />} />
           </Route>
         </Route>
       </Routes>
